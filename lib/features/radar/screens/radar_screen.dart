@@ -28,10 +28,10 @@ class _RadarScreenState extends State<RadarScreen>
     )..repeat();
   }
 
-  void _handleInput(String v) {
-    if (v.trim().isEmpty) return;
+  void _handleInput(String inputText) {
+    if (inputText.trim().isEmpty) return;
 
-    if (v.trim().toLowerCase() == 'avada kedavra') {
+    if (inputText.trim().toLowerCase() == 'avada kedavra') {
       setState(() {
         _radius = 0;
         _isDestroyed = true;
@@ -41,7 +41,7 @@ class _RadarScreenState extends State<RadarScreen>
       return;
     }
 
-    final double? val = double.tryParse(v);
+    final double? val = double.tryParse(inputText);
     if (val != null) {
       setState(() {
         _isDestroyed = false;
@@ -64,16 +64,16 @@ class _RadarScreenState extends State<RadarScreen>
       });
       _input.clear();
     } else {
-      _showError(v);
+      _showError(inputText);
     }
   }
 
-  void _showError(String v) {
+  void _showError(String inputText) {
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'ERROR: "$v" is not a valid '
+          'ERROR: "$inputText" is not a valid '
           'coordinate format.',
           style: const TextStyle(color: Colors.white),
         ),
