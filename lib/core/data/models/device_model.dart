@@ -15,24 +15,23 @@ class DeviceModel {
     String? id,
     String? name,
     List<CoordinateModel>? coordinates,
-  }) =>
-      DeviceModel(
-        id: id ?? this.id,
-        name: name ?? this.name,
-        coordinates: coordinates ?? this.coordinates,
-      );
+  }) => DeviceModel(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    coordinates: coordinates ?? this.coordinates,
+  );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'coords': coordinates.map((c) => c.toJson()).toList(),
-      };
+    'id': id,
+    'name': name,
+    'coords': coordinates.map((c) => c.toJson()).toList(),
+  };
 
   factory DeviceModel.fromJson(Map<String, dynamic> j) => DeviceModel(
-        id: j['id'] as String,
-        name: j['name'] as String,
-        coordinates: (j['coords'] as List)
-            .map((e) => CoordinateModel.fromJson(e as Map<String, dynamic>))
-            .toList(),
-      );
+    id: j['id'] as String,
+    name: j['name'] as String,
+    coordinates: (j['coords'] as List)
+        .map((e) => CoordinateModel.fromJson(e as Map<String, dynamic>))
+        .toList(),
+  );
 }

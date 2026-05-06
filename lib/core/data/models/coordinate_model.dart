@@ -12,16 +12,16 @@ class CoordinateModel {
   });
 
   Map<String, dynamic> toJson() => {
-        'lat': latitude,
-        'lng': longitude,
-        'ts': timestamp.toIso8601String(),
-        'dist': distance,
-      };
+    'lat': latitude,
+    'lng': longitude,
+    'ts': timestamp.toIso8601String(),
+    'dist': distance,
+  };
 
   factory CoordinateModel.fromJson(Map<String, dynamic> j) => CoordinateModel(
-        latitude: (j['lat'] as num).toDouble(),
-        longitude: (j['lng'] as num).toDouble(),
-        timestamp: DateTime.parse(j['ts'] as String),
-        distance: (j['dist'] as num).toDouble(),
-      );
+    latitude: (j['lat'] as num).toDouble(),
+    longitude: (j['lng'] as num).toDouble(),
+    timestamp: DateTime.parse(j['ts'] as String),
+    distance: (j['dist'] as num).toDouble(),
+  );
 }

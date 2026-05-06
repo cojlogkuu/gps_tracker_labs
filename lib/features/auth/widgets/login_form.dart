@@ -30,9 +30,7 @@ class LoginForm extends StatelessWidget {
             prefixIcon: Icons.alternate_email,
             keyboardType: TextInputType.emailAddress,
             validator: (v) =>
-                (v == null || v.trim().isEmpty)
-                    ? 'Email is required'
-                    : null,
+                (v == null || v.trim().isEmpty) ? 'Email is required' : null,
           ),
           const SizedBox(height: 16),
           GeneralTextField(
@@ -42,9 +40,7 @@ class LoginForm extends StatelessWidget {
             obscureText: true,
             textInputAction: TextInputAction.done,
             validator: (v) =>
-                (v == null || v.isEmpty)
-                    ? 'Password is required'
-                    : null,
+                (v == null || v.isEmpty) ? 'Password is required' : null,
           ),
           const SizedBox(height: 32),
           GeneralButton(

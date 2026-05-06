@@ -24,8 +24,7 @@ class SharedPrefsAuthRepository implements IAuthRepository {
   static const _keyEmail = 'user_email';
   static const _keyPassword = 'user_password';
 
-  Future<SharedPreferences> get _prefs =>
-      SharedPreferences.getInstance();
+  Future<SharedPreferences> get _prefs => SharedPreferences.getInstance();
 
   @override
   Future<void> saveUser({

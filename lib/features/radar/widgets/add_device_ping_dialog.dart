@@ -58,8 +58,12 @@ class _AddDevicePingDialogState extends State<AddDevicePingDialog> {
     final lng = double.tryParse(_lngCtrl.text.trim());
     if (lat == null || lng == null) return;
 
-    final dist =
-        haversineDistance(widget.baseLat ?? 0, widget.baseLng ?? 0, lat, lng);
+    final dist = haversineDistance(
+      widget.baseLat ?? 0,
+      widget.baseLng ?? 0,
+      lat,
+      lng,
+    );
     final coord = CoordinateModel(
       latitude: lat,
       longitude: lng,

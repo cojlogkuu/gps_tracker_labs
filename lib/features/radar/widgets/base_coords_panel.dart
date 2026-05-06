@@ -44,7 +44,7 @@ class _BaseCoordsPanelState extends State<BaseCoordsPanel> {
     final lng = double.tryParse(_lngCtrl.text.trim());
     if (lat == null || lng == null) return;
     widget.onSave(lat, lng);
-    
+
     if (!mounted) return;
     ScaffoldMessenger.of(context)
       ..clearSnackBars()
@@ -64,25 +64,21 @@ class _BaseCoordsPanelState extends State<BaseCoordsPanel> {
   }
 
   Widget _field(TextEditingController c, String label) => TextField(
-        controller: c,
-        keyboardType: const TextInputType.numberWithOptions(
-          decimal: true,
-          signed: true,
-        ),
-        style: const TextStyle(color: Colors.white, fontSize: 13),
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle:
-              const TextStyle(color: AppColors.accentTeal, fontSize: 11),
-          filled: true,
-          fillColor: AppColors.primaryBg,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 10,
-            vertical: 10,
-          ),
-        ),
-      );
+    controller: c,
+    keyboardType: const TextInputType.numberWithOptions(
+      decimal: true,
+      signed: true,
+    ),
+    style: const TextStyle(color: Colors.white, fontSize: 13),
+    decoration: InputDecoration(
+      labelText: label,
+      labelStyle: const TextStyle(color: AppColors.accentTeal, fontSize: 11),
+      filled: true,
+      fillColor: AppColors.primaryBg,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {

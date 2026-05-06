@@ -10,14 +10,14 @@ class UserModel {
   });
 
   Map<String, dynamic> toJson() => {
-        'name': name,
-        'email': email,
-        'password': password,
-      };
+    'name': name,
+    'email': email,
+    'password': password,
+  };
 
   factory UserModel.fromJson(Map<String, dynamic> j) => UserModel(
-        name: j['name'] as String,
-        email: j['email'] as String,
-        password: j['password'] as String,
-      );
+    name: j['name'] as String,
+    email: j['email'] as String,
+    password: j['password'] as String,
+  );
 }

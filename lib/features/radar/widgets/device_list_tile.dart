@@ -9,13 +9,12 @@ class DeviceListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final last =
-        device.coordinates.isNotEmpty ? device.coordinates.last : null;
+    final last = device.coordinates.isNotEmpty ? device.coordinates.last : null;
     final distText = last == null
         ? '—'
         : last.distance >= 1000
-            ? '${(last.distance / 1000).toStringAsFixed(2)} km'
-            : '${last.distance.toStringAsFixed(0)} m';
+        ? '${(last.distance / 1000).toStringAsFixed(2)} km'
+        : '${last.distance.toStringAsFixed(0)} m';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -23,9 +22,7 @@ class DeviceListTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.cardBg,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: AppColors.accentTeal.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: AppColors.accentTeal.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [

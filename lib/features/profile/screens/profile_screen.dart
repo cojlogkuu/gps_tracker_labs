@@ -51,14 +51,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   static Widget _sectionLabel(String text) => Text(
-        text,
-        style: const TextStyle(
-          fontSize: 10,
-          letterSpacing: 2.5,
-          color: AppColors.accentTeal,
-          fontWeight: FontWeight.w600,
-        ),
-      );
+    text,
+    style: const TextStyle(
+      fontSize: 10,
+      letterSpacing: 2.5,
+      color: AppColors.accentTeal,
+      fontWeight: FontWeight.w600,
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -85,8 +85,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             tooltip: 'Edit Name',
           ),
           IconButton(
-            icon:
-                const Icon(Icons.delete_forever, color: AppColors.errorRed),
+            icon: const Icon(Icons.delete_forever, color: AppColors.errorRed),
             onPressed: _deleteAccount,
             tooltip: 'Delete Account',
           ),
@@ -119,8 +118,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 40),
               ProfileLogoutButton(
-                onLogout: () => Navigator.of(context)
-                    .pushNamedAndRemoveUntil('/login', (_) => false),
+                onLogout: () => Navigator.of(
+                  context,
+                ).pushNamedAndRemoveUntil('/login', (_) => false),
               ),
             ],
           ),

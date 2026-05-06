@@ -53,9 +53,9 @@ class _RadarScreenState extends State<RadarScreen>
     final nearest = _devices
         .where((d) => d.coordinates.isNotEmpty)
         .fold<double>(double.infinity, (min, d) {
-      final dist = d.coordinates.last.distance;
-      return dist < min ? dist : min;
-    });
+          final dist = d.coordinates.last.distance;
+          return dist < min ? dist : min;
+        });
     if (nearest < 500) {
       _ctrl.duration = const Duration(milliseconds: 2500);
     } else if (nearest < 2000) {
@@ -71,9 +71,9 @@ class _RadarScreenState extends State<RadarScreen>
     final nearest = _devices
         .where((d) => d.coordinates.isNotEmpty)
         .fold<double>(double.infinity, (min, d) {
-      final dist = d.coordinates.last.distance;
-      return dist < min ? dist : min;
-    });
+          final dist = d.coordinates.last.distance;
+          return dist < min ? dist : min;
+        });
     if (nearest < 500) return AppColors.accentTeal;
     if (nearest < 2000) return Colors.orangeAccent;
     return AppColors.errorRed;
@@ -84,9 +84,9 @@ class _RadarScreenState extends State<RadarScreen>
     final nearest = _devices
         .where((d) => d.coordinates.isNotEmpty)
         .fold<double>(double.infinity, (min, d) {
-      final dist = d.coordinates.last.distance;
-      return dist < min ? dist : min;
-    });
+          final dist = d.coordinates.last.distance;
+          return dist < min ? dist : min;
+        });
     if (nearest < 500) return 1;
     if (nearest < 2000) return 2;
     return 3;
@@ -104,10 +104,7 @@ class _RadarScreenState extends State<RadarScreen>
   Future<void> _onPingSent(DeviceModel updated, bool isNew) async {
     final list = isNew
         ? [..._devices, updated]
-        : [
-            for (final d in _devices)
-              d.id == updated.id ? updated : d,
-          ];
+        : [for (final d in _devices) d.id == updated.id ? updated : d];
     await _repo.saveDevices(list);
     if (!mounted) return;
     setState(() {

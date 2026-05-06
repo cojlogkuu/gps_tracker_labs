@@ -7,18 +7,13 @@ class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
 
   @override
-  State<MainNavigationScreen> createState() =>
-      _MainNavigationScreenState();
+  State<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
 
-class _MainNavigationScreenState
-    extends State<MainNavigationScreen> {
+class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _selectedIndex = 0;
 
-  static const List<Widget> _pages = [
-    RadarScreen(),
-    ProfileScreen(),
-  ];
+  static const List<Widget> _pages = [RadarScreen(), ProfileScreen()];
 
   void _onItemTapped(int index) {
     setState(() => _selectedIndex = index);
@@ -27,10 +22,7 @@ class _MainNavigationScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _pages,
-      ),
+      body: IndexedStack(index: _selectedIndex, children: _pages),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
@@ -38,10 +30,7 @@ class _MainNavigationScreenState
         selectedItemColor: AppColors.accentTeal,
         unselectedItemColor: Colors.white38,
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.radar),
-            label: 'Radar',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.radar), label: 'Radar'),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
             label: 'Profile',
