@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:gps_tracker/core/data/repositories/auth_repository.dart';
+import 'package:gps_tracker/core/providers/auth_provider.dart';
 import 'package:gps_tracker/core/theme/app_colors.dart';
 import 'package:gps_tracker/features/profile/widgets/delete_account_dialog.dart';
+import 'package:gps_tracker/features/profile/widgets/device_list_widget.dart';
 import 'package:gps_tracker/features/profile/widgets/edit_name_dialog.dart';
 import 'package:gps_tracker/features/profile/widgets/profile_header.dart';
 import 'package:gps_tracker/features/profile/widgets/profile_info_card.dart';
 import 'package:gps_tracker/features/profile/widgets/profile_logout_button.dart';
+import 'package:provider/provider.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -46,6 +49,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final confirmed = await showDeleteAccountDialog(context);
     if (!confirmed) return;
     await _auth.deleteAccount();
+    if (!mounted) return;
+    final authProvider = context.read<AuthProvider>();
+    await authProvider.logout();
     if (!mounted) return;
     Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
   }
@@ -116,11 +122,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ],
               ),
+              const SizedBox(height: 32),
+              _sectionLabel('SAVED DEVICES'),
+              const SizedBox(height: 12),
+              const DeviceListWidget(),
               const SizedBox(height: 40),
               ProfileLogoutButton(
-                onLogout: () => Navigator.of(
-                  context,
-                ).pushNamedAndRemoveUntil('/login', (_) => false),
+                onLogout: () async {
+                  await context.read<AuthProvider>().logout();
+                  if (!context.mounted) return;
+                  Navigator.of(
+                    context,
+                  ).pushNamedAndRemoveUntil('/login', (_) => false);
+                },
               ),
             ],
           ),

@@ -1,0 +1,12 @@
+{
+  "name": "mqtt-simulator",
+  "version": "1.0.0",
+  "description": "IoT GPS Simulator",
+  "main": "simulator.js",
+  "scripts": {
+    "start": "node simulator.js"
+  },
+  "dependencies": {
+    "mqtt": "^5.0.0"
+  }
+}

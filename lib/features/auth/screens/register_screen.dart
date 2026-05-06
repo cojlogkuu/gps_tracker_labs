@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:gps_tracker/core/data/repositories/auth_repository.dart';
+import 'package:gps_tracker/core/providers/auth_provider.dart';
+import 'package:gps_tracker/core/providers/connectivity_provider.dart';
 import 'package:gps_tracker/core/theme/app_colors.dart';
 import 'package:gps_tracker/features/auth/widgets/auth_footer_link.dart';
 import 'package:gps_tracker/features/auth/widgets/register_form.dart';
 import 'package:gps_tracker/features/auth/widgets/register_header.dart';
+import 'package:provider/provider.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -18,7 +20,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   final _confirmCtrl = TextEditingController();
-  final IAuthRepository _auth = SharedPrefsAuthRepository();
   bool _loading = false;
 
   @override
@@ -32,12 +33,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _onRegister() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    final isOnline = context.read<ConnectivityProvider>().isOnline;
+    if (!isOnline) {
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Offline: Cannot register at this time.',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            backgroundColor: AppColors.errorRed,
+          ),
+        );
+      return;
+    }
+
     setState(() => _loading = true);
 
-    await _auth.saveUser(
-      name: _nameCtrl.text.trim(),
-      email: _emailCtrl.text.trim(),
-      password: _passCtrl.text,
+    final auth = context.read<AuthProvider>();
+    await auth.register(
+      _nameCtrl.text.trim(),
+      _emailCtrl.text.trim(),
+      _passCtrl.text,
     );
 
     if (!mounted) return;
