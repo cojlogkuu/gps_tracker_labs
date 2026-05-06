@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gps_tracker/core/data/repositories/auth_repository.dart';
 import 'package:gps_tracker/core/theme/app_colors.dart';
 import 'package:gps_tracker/features/auth/widgets/auth_footer_link.dart';
 import 'package:gps_tracker/features/auth/widgets/register_form.dart';
@@ -17,6 +18,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   final _confirmCtrl = TextEditingController();
+  final IAuthRepository _auth = SharedPrefsAuthRepository();
+  bool _loading = false;
 
   @override
   void dispose() {
@@ -27,10 +30,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  void _onRegister() {
-    if (_formKey.currentState?.validate() ?? false) {
-      Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
-    }
+  Future<void> _onRegister() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    setState(() => _loading = true);
+
+    await _auth.saveUser(
+      name: _nameCtrl.text.trim(),
+      email: _emailCtrl.text.trim(),
+      password: _passCtrl.text,
+    );
+
+    if (!mounted) return;
+    setState(() => _loading = false);
+    Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
   }
 
   @override
@@ -67,6 +79,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 passwordController: _passCtrl,
                 confirmController: _confirmCtrl,
                 onRegister: _onRegister,
+                isLoading: _loading,
               ),
               const SizedBox(height: 32),
               AuthFooterLink(

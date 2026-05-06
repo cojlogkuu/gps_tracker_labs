@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gps_tracker/core/theme/app_colors.dart';
 import 'package:gps_tracker/features/auth/screens/login_screen.dart';
 import 'package:gps_tracker/features/auth/screens/register_screen.dart';
-import 'package:gps_tracker/features/profile/screens/profile_screen.dart';
-import 'package:gps_tracker/features/radar/screens/radar_screen.dart';
+import 'package:gps_tracker/features/main/screens/main_navigation_screen.dart';
 
 void main() => runApp(const GpsTrackerApp());
 
@@ -21,8 +20,8 @@ class GpsTrackerApp extends StatelessWidget {
       routes: {
         '/login': (_) => const LoginScreen(),
         '/register': (_) => const RegisterScreen(),
-        '/home': (_) => const RadarScreen(),
-        '/profile': (_) => const ProfileScreen(),
+        '/home': (_) => const MainNavigationScreen(),
+        '/main': (_) => const MainNavigationScreen(),
       },
     );
   }
