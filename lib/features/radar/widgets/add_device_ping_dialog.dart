@@ -1,26 +1,13 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:gps_tracker/core/data/models/coordinate_model.dart';
-import 'package:gps_tracker/core/data/models/device_model.dart';
+import 'package:gps_tracker/core/providers/mqtt_provider.dart';
 import 'package:gps_tracker/core/theme/app_colors.dart';
-import 'package:gps_tracker/core/utils/haversine.dart';
 import 'package:gps_tracker/features/radar/widgets/ping_dialog_fields.dart';
-import 'package:uuid/uuid.dart';
+import 'package:provider/provider.dart';
 
 class AddDevicePingDialog extends StatefulWidget {
-  final List<DeviceModel> devices;
-  final double? baseLat;
-  final double? baseLng;
-  final void Function(DeviceModel updated, bool isNew) onPingSent;
-
-  const AddDevicePingDialog({
-    required this.devices,
-    required this.onPingSent,
-    this.baseLat,
-    this.baseLng,
-    super.key,
-  });
+  const AddDevicePingDialog({super.key});
 
   @override
   State<AddDevicePingDialog> createState() => _AddDevicePingDialogState();
@@ -28,22 +15,17 @@ class AddDevicePingDialog extends StatefulWidget {
 
 class _AddDevicePingDialogState extends State<AddDevicePingDialog> {
   String? _selId;
-  final _nameCtrl = TextEditingController();
   final _latCtrl = TextEditingController();
   final _lngCtrl = TextEditingController();
 
   @override
   void dispose() {
-    _nameCtrl.dispose();
     _latCtrl.dispose();
     _lngCtrl.dispose();
     super.dispose();
   }
 
-  void _generateRandom() {
-    final bLat = widget.baseLat;
-    final bLng = widget.baseLng;
-    if (bLat == null || bLng == null) return;
+  void _generateRandom(double bLat, double bLng) {
     final rng = Random();
     final dLat = rng.nextDouble() * 0.09 - 0.045;
     final dLng = rng.nextDouble() * 0.09 - 0.045;
@@ -53,46 +35,27 @@ class _AddDevicePingDialogState extends State<AddDevicePingDialog> {
     });
   }
 
-  void _sendPing() {
+  void _sendPing(MqttProvider mqtt) {
+    if (_selId == null) return;
     final lat = double.tryParse(_latCtrl.text.trim());
     final lng = double.tryParse(_lngCtrl.text.trim());
     if (lat == null || lng == null) return;
 
-    final dist = haversineDistance(
-      widget.baseLat ?? 0,
-      widget.baseLng ?? 0,
-      lat,
-      lng,
-    );
-    final coord = CoordinateModel(
-      latitude: lat,
-      longitude: lng,
-      timestamp: DateTime.now(),
-      distance: dist,
-    );
-
-    final isNew = _selId == null || _selId == DeviceDropdown.newKey;
-    DeviceModel target;
-    if (isNew) {
-      final name = _nameCtrl.text.trim().isEmpty
-          ? 'Device ${widget.devices.length + 1}'
-          : _nameCtrl.text.trim();
-      target = DeviceModel(
-        id: const Uuid().v4(),
-        name: name,
-        coordinates: [coord],
-      );
-    } else {
-      final ex = widget.devices.firstWhere((d) => d.id == _selId);
-      target = ex.copyWith(coordinates: [...ex.coordinates, coord]);
-    }
-    widget.onPingSent(target, isNew);
+    mqtt.publishCoordinate(_selId!, lat, lng);
     Navigator.of(context).pop();
   }
 
   @override
   Widget build(BuildContext context) {
-    final showName = _selId == null || _selId == DeviceDropdown.newKey;
+    final mqtt = context.watch<MqttProvider>();
+    final devices = mqtt.devices;
+    final bLat = mqtt.baseLat;
+    final bLng = mqtt.baseLng;
+
+    if (_selId == null && devices.isNotEmpty) {
+      _selId = devices.first.id;
+    }
+
     return AlertDialog(
       backgroundColor: AppColors.cardBg,
       title: const Text(
@@ -104,19 +67,11 @@ class _AddDevicePingDialogState extends State<AddDevicePingDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             DeviceDropdown(
-              deviceIds: widget.devices.map((d) => d.id).toList(),
-              deviceNames: widget.devices.map((d) => d.name).toList(),
+              deviceIds: devices.map((d) => d.id).toList(),
+              deviceNames: devices.map((d) => d.name).toList(),
               value: _selId,
               onChanged: (v) => setState(() => _selId = v),
             ),
-            if (showName) ...[
-              const SizedBox(height: 12),
-              PingDialogField(
-                controller: _nameCtrl,
-                label: 'Device Name',
-                icon: Icons.label_outline,
-              ),
-            ],
             const SizedBox(height: 12),
             PingDialogField(
               controller: _latCtrl,
@@ -141,7 +96,9 @@ class _AddDevicePingDialogState extends State<AddDevicePingDialog> {
                 ),
                 icon: const Icon(Icons.shuffle, size: 16),
                 label: const Text('Generate Random Nearby'),
-                onPressed: widget.baseLat != null ? _generateRandom : null,
+                onPressed: bLat != null && bLng != null
+                    ? () => _generateRandom(bLat, bLng)
+                    : null,
               ),
             ),
           ],
@@ -153,7 +110,7 @@ class _AddDevicePingDialogState extends State<AddDevicePingDialog> {
           child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
         ),
         TextButton(
-          onPressed: _sendPing,
+          onPressed: () => _sendPing(mqtt),
           child: const Text(
             'Send Ping',
             style: TextStyle(

@@ -40,8 +40,6 @@ class PingDialogField extends StatelessWidget {
 }
 
 class DeviceDropdown extends StatelessWidget {
-  static const newKey = '__new__';
-
   final List<String> deviceIds;
   final List<String> deviceNames;
   final String? value;
@@ -80,7 +78,6 @@ class DeviceDropdown extends StatelessWidget {
       items: [
         for (int i = 0; i < deviceIds.length; i++)
           DropdownMenuItem(value: deviceIds[i], child: Text(deviceNames[i])),
-        const DropdownMenuItem(value: newKey, child: Text('＋ New Device')),
       ],
       onChanged: onChanged,
     );
