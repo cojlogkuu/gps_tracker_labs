@@ -1,60 +1,33 @@
 import 'package:flutter/material.dart';
-import 'package:gps_tracker/core/data/repositories/api_device_repository.dart';
-import 'package:gps_tracker/core/providers/auth_provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gps_tracker/core/providers/connectivity_provider.dart';
 import 'package:gps_tracker/core/theme/app_colors.dart';
+import 'package:gps_tracker/features/auth/cubit/auth_cubit.dart';
+import 'package:gps_tracker/features/auth/cubit/auth_state.dart';
 import 'package:gps_tracker/features/auth/screens/login_screen.dart';
 import 'package:gps_tracker/features/main/screens/main_navigation_screen.dart';
-import 'package:provider/provider.dart';
 
-/// Declarative startup router.
-///
-/// Runs [AuthProvider.tryAutoLogin] exactly once (in [initState], safely via
-/// [context.read]).  While the future is pending it shows [_SplashView].
-/// Once resolved it reads auth state with [context.watch] and returns the
-/// correct widget directly — no [Navigator] calls during build, which
-/// eliminates the "_dependents.isEmpty" crash on Flutter Web reload.
-class AppRouter extends StatefulWidget {
-  final ApiDeviceRepository apiDeviceRepo;
-
-  const AppRouter({required this.apiDeviceRepo, super.key});
-
-  @override
-  State<AppRouter> createState() => _AppRouterState();
-}
-
-class _AppRouterState extends State<AppRouter> {
-  late final Future<void> _autoLoginFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    // read (listen: false) is safe inside initState.
-    _autoLoginFuture = context.read<AuthProvider>().tryAutoLogin();
-  }
+class AppRouter extends StatelessWidget {
+  const AppRouter({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<void>(
-      future: _autoLoginFuture,
-      builder: (context, snapshot) {
-        // Still resolving — show the splash visual.
-        if (snapshot.connectionState != ConnectionState.done) {
+    return BlocBuilder<AuthCubit, AuthState>(
+      builder: (context, state) {
+        if (state is AuthInitial || state is AuthLoading) {
           return const _SplashView();
         }
 
-        // CRITICAL: purely declarative — return widgets, never call Navigator.
-        final isAuth = context.watch<AuthProvider>().isAuthenticated;
-        if (isAuth) {
-          return MainNavigationScreen(apiDeviceRepo: widget.apiDeviceRepo);
+        if (state is AuthAuthenticated) {
+          return const MainNavigationScreen();
         }
+
         return const LoginScreen();
       },
     );
   }
 }
 
-/// Pure visual splash — no async logic, no navigation.
 class _SplashView extends StatelessWidget {
   const _SplashView();
 

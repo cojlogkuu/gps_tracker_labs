@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gps_tracker/core/data/repositories/api_auth_repository.dart';
 import 'package:gps_tracker/core/data/repositories/api_device_repository.dart';
 import 'package:gps_tracker/core/data/repositories/auth_repository.dart';
 import 'package:gps_tracker/core/data/repositories/device_repository.dart';
 import 'package:gps_tracker/core/data/repositories/location_repository.dart';
-import 'package:gps_tracker/core/providers/auth_provider.dart';
 import 'package:gps_tracker/core/providers/connectivity_provider.dart';
 import 'package:gps_tracker/core/providers/mqtt_provider.dart';
 import 'package:gps_tracker/core/theme/app_colors.dart';
+import 'package:gps_tracker/features/auth/cubit/auth_cubit.dart';
 import 'package:gps_tracker/features/auth/screens/login_screen.dart';
 import 'package:gps_tracker/features/auth/screens/register_screen.dart';
+import 'package:gps_tracker/features/device/cubit/device_cubit.dart';
 import 'package:gps_tracker/features/main/screens/app_router.dart';
 import 'package:gps_tracker/features/main/screens/main_navigation_screen.dart';
 import 'package:provider/provider.dart';
@@ -17,7 +19,7 @@ import 'package:provider/provider.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ── Repositories ────────────────────────────────────────────────────────
+  // ── Repositories (Singleton Instances) ──────────────────────────────────
   final localAuthRepo = SharedPrefsAuthRepository();
   final apiAuthRepo = ApiAuthRepository(cache: localAuthRepo);
 
@@ -27,29 +29,49 @@ void main() {
   final locationRepo = ApiLocationRepository();
 
   runApp(
-    MultiProvider(
+    MultiRepositoryProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
-        ChangeNotifierProvider(
-          create: (_) => AuthProvider(cache: localAuthRepo, api: apiAuthRepo),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => MqttProvider(
-            localRepo: localDeviceRepo,
-            apiRepo: apiDeviceRepo,
-            locationRepo: locationRepo,
-          ),
-        ),
+        RepositoryProvider<ApiAuthRepository>.value(value: apiAuthRepo),
+        RepositoryProvider<ApiDeviceRepository>.value(value: apiDeviceRepo),
+        RepositoryProvider<ApiLocationRepository>.value(value: locationRepo),
+        RepositoryProvider<IAuthRepository>.value(value: localAuthRepo),
+        RepositoryProvider<IDeviceRepository>.value(value: localDeviceRepo),
       ],
-      child: GpsTrackerApp(apiDeviceRepo: apiDeviceRepo),
+      child: MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
+          ChangeNotifierProvider(
+            create: (_) => MqttProvider(
+              localRepo: localDeviceRepo,
+              apiRepo: apiDeviceRepo,
+              locationRepo: locationRepo,
+            ),
+          ),
+        ],
+        child: MultiBlocProvider(
+          providers: [
+            BlocProvider<AuthCubit>(
+              create: (context) => AuthCubit(
+                api: context.read<ApiAuthRepository>(),
+                cache: context.read<IAuthRepository>(),
+              )..tryAutoLogin(),
+            ),
+            BlocProvider<DeviceCubit>(
+              create: (context) => DeviceCubit(
+                api: context.read<ApiDeviceRepository>(),
+                cache: context.read<IDeviceRepository>(),
+              ),
+            ),
+          ],
+          child: const GpsTrackerApp(),
+        ),
+      ),
     ),
   );
 }
 
 class GpsTrackerApp extends StatelessWidget {
-  final ApiDeviceRepository apiDeviceRepo;
-
-  const GpsTrackerApp({required this.apiDeviceRepo, super.key});
+  const GpsTrackerApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -58,14 +80,12 @@ class GpsTrackerApp extends StatelessWidget {
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: AppColors.primaryBg,
       ),
-      // AppRouter handles initial auth check declaratively.
-      // Named routes are used only for user-initiated navigation.
-      home: AppRouter(apiDeviceRepo: apiDeviceRepo),
+      home: const AppRouter(),
       routes: {
         '/login': (_) => const LoginScreen(),
         '/register': (_) => const RegisterScreen(),
-        '/home': (_) => MainNavigationScreen(apiDeviceRepo: apiDeviceRepo),
-        '/main': (_) => MainNavigationScreen(apiDeviceRepo: apiDeviceRepo),
+        '/home': (_) => const MainNavigationScreen(),
+        '/main': (_) => const MainNavigationScreen(),
       },
     );
   }

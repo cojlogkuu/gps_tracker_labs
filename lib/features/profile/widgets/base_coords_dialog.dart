@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:gps_tracker/core/providers/auth_provider.dart';
 import 'package:gps_tracker/core/providers/mqtt_provider.dart';
 import 'package:gps_tracker/core/theme/app_colors.dart';
+import 'package:gps_tracker/features/auth/cubit/auth_cubit.dart';
 import 'package:provider/provider.dart';
 
 class BaseCoordsDialog extends StatefulWidget {
@@ -40,7 +40,7 @@ class _BaseCoordsDialogState extends State<BaseCoordsDialog> {
     setState(() => _loading = true);
 
     try {
-      await context.read<AuthProvider>().updateBaseCoords(lat, lng);
+      await context.read<AuthCubit>().updateBaseCoords(lat, lng);
       if (!mounted) return;
       await context.read<MqttProvider>().setBase(lat, lng);
       if (!mounted) return;

@@ -1,19 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:gps_tracker/core/data/repositories/api_device_repository.dart';
-import 'package:gps_tracker/core/providers/auth_provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gps_tracker/core/theme/app_colors.dart';
+import 'package:gps_tracker/features/auth/cubit/auth_cubit.dart';
+import 'package:gps_tracker/features/auth/cubit/auth_state.dart';
 import 'package:gps_tracker/features/profile/widgets/base_coords_dialog.dart';
 import 'package:gps_tracker/features/profile/widgets/delete_account_dialog.dart';
 import 'package:gps_tracker/features/profile/widgets/device_list_widget.dart';
 import 'package:gps_tracker/features/profile/widgets/profile_header.dart';
 import 'package:gps_tracker/features/profile/widgets/profile_info_card.dart';
 import 'package:gps_tracker/features/profile/widgets/profile_logout_button.dart';
-import 'package:provider/provider.dart';
 
 class ProfileScreen extends StatelessWidget {
-  final ApiDeviceRepository apiDeviceRepo;
-
-  const ProfileScreen({required this.apiDeviceRepo, super.key});
+  const ProfileScreen({super.key});
 
   static Widget _label(String text) => Text(
     text,
@@ -28,7 +26,7 @@ class ProfileScreen extends StatelessWidget {
   Future<void> _deleteAccount(BuildContext context) async {
     final confirmed = await showDeleteAccountDialog(context);
     if (!confirmed || !context.mounted) return;
-    await context.read<AuthProvider>().logout();
+    await context.read<AuthCubit>().logout();
     if (!context.mounted) return;
     Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
   }
@@ -42,8 +40,6 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthProvider>();
-    final user = auth.currentUser;
     final hPad = MediaQuery.of(context).size.width > 600 ? 80.0 : 24.0;
 
     return Scaffold(
@@ -75,53 +71,59 @@ class ProfileScreen extends StatelessWidget {
       ),
       body: SafeArea(
         top: false,
-        child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(hPad, 24, hPad, 32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ProfileHeader(name: user?.fullName ?? ''),
-              const SizedBox(height: 32),
-              _label('ACCOUNT DETAILS'),
-              const SizedBox(height: 12),
-              ProfileInfoCard(
-                items: [
-                  ProfileInfoRow(
-                    icon: Icons.person_outline,
-                    label: 'Full Name',
-                    value: user?.fullName ?? '',
+        child: BlocBuilder<AuthCubit, AuthState>(
+          builder: (context, state) {
+            final user = state is AuthAuthenticated ? state.user : null;
+
+            return SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(hPad, 24, hPad, 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ProfileHeader(name: user?.fullName ?? ''),
+                  const SizedBox(height: 32),
+                  _label('ACCOUNT DETAILS'),
+                  const SizedBox(height: 12),
+                  ProfileInfoCard(
+                    items: [
+                      ProfileInfoRow(
+                        icon: Icons.person_outline,
+                        label: 'Full Name',
+                        value: user?.fullName ?? '',
+                      ),
+                      ProfileInfoRow(
+                        icon: Icons.alternate_email,
+                        label: 'Email',
+                        value: user?.email ?? '',
+                      ),
+                      ProfileInfoRow(
+                        icon: Icons.my_location,
+                        label: 'Base Coords',
+                        value: user?.hasBaseCoords == true
+                            ? '${user!.baseLatitude!.toStringAsFixed(4)}, '
+                                  '${user.baseLongitude!.toStringAsFixed(4)}'
+                            : 'Not set — MQTT blocked',
+                      ),
+                    ],
                   ),
-                  ProfileInfoRow(
-                    icon: Icons.alternate_email,
-                    label: 'Email',
-                    value: user?.email ?? '',
-                  ),
-                  ProfileInfoRow(
-                    icon: Icons.my_location,
-                    label: 'Base Coords',
-                    value: user?.hasBaseCoords == true
-                        ? '${user!.baseLatitude!.toStringAsFixed(4)}, '
-                              '${user.baseLongitude!.toStringAsFixed(4)}'
-                        : 'Not set — MQTT blocked',
+                  const SizedBox(height: 32),
+                  _label('SAVED DEVICES'),
+                  const SizedBox(height: 12),
+                  const DeviceListWidget(),
+                  const SizedBox(height: 40),
+                  ProfileLogoutButton(
+                    onLogout: () async {
+                      await context.read<AuthCubit>().logout();
+                      if (!context.mounted) return;
+                      Navigator.of(
+                        context,
+                      ).pushNamedAndRemoveUntil('/login', (_) => false);
+                    },
                   ),
                 ],
               ),
-              const SizedBox(height: 32),
-              _label('SAVED DEVICES'),
-              const SizedBox(height: 12),
-              DeviceListWidget(apiDeviceRepo: apiDeviceRepo),
-              const SizedBox(height: 40),
-              ProfileLogoutButton(
-                onLogout: () async {
-                  await context.read<AuthProvider>().logout();
-                  if (!context.mounted) return;
-                  Navigator.of(
-                    context,
-                  ).pushNamedAndRemoveUntil('/login', (_) => false);
-                },
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
