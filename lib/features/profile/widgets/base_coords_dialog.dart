@@ -90,11 +90,9 @@ class _BaseCoordsDialogState extends State<BaseCoordsDialog> {
                   borderSide: BorderSide(color: AppColors.accentTeal),
                 ),
               ),
-              validator:
-                  (val) =>
-                      val == null || double.tryParse(val) == null
-                          ? 'Invalid'
-                          : null,
+              validator: (val) => val == null || double.tryParse(val) == null
+                  ? 'Invalid'
+                  : null,
             ),
             const SizedBox(height: 8),
             TextFormField(
@@ -110,11 +108,9 @@ class _BaseCoordsDialogState extends State<BaseCoordsDialog> {
                   borderSide: BorderSide(color: AppColors.accentTeal),
                 ),
               ),
-              validator:
-                  (val) =>
-                      val == null || double.tryParse(val) == null
-                          ? 'Invalid'
-                          : null,
+              validator: (val) => val == null || double.tryParse(val) == null
+                  ? 'Invalid'
+                  : null,
             ),
           ],
         ),

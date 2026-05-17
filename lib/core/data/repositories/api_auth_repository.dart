@@ -26,11 +26,7 @@ class ApiAuthRepository {
     try {
       final res = await _dio.post<Map<String, dynamic>>(
         '/auth/register',
-        data: {
-          'fullName': fullName,
-          'email': email,
-          'password': password,
-        },
+        data: {'fullName': fullName, 'email': email, 'password': password},
       );
       final token = res.data!['access_token'] as String;
       await _cache.saveToken(token);
