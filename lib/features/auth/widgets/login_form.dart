@@ -7,12 +7,14 @@ class LoginForm extends StatelessWidget {
   final TextEditingController emailController;
   final TextEditingController passwordController;
   final VoidCallback onLogin;
+  final bool isLoading;
 
   const LoginForm({
     required this.formKey,
     required this.emailController,
     required this.passwordController,
     required this.onLogin,
+    this.isLoading = false,
     super.key,
   });
 
@@ -41,7 +43,11 @@ class LoginForm extends StatelessWidget {
                 (v == null || v.isEmpty) ? 'Password is required' : null,
           ),
           const SizedBox(height: 32),
-          GeneralButton(label: 'SIGN IN', onPressed: onLogin),
+          GeneralButton(
+            label: 'SIGN IN',
+            onPressed: onLogin,
+            isLoading: isLoading,
+          ),
         ],
       ),
     );

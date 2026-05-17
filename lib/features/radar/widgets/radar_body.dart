@@ -1,27 +1,40 @@
 import 'package:flutter/material.dart';
+import 'package:gps_tracker/core/data/models/device_model.dart';
 import 'package:gps_tracker/core/theme/app_colors.dart';
-import 'package:gps_tracker/features/radar/widgets/distance_control_panel.dart';
+import 'package:gps_tracker/features/radar/widgets/base_coords_panel.dart';
+import 'package:gps_tracker/features/radar/widgets/device_list_tile.dart';
 import 'package:gps_tracker/features/radar/widgets/radar_view.dart';
 
 class RadarBody extends StatelessWidget {
   final Animation<double> animation;
-  final TextEditingController inputController;
-  final double radius;
-  final bool isDestroyed;
+  final List<DeviceModel> devices;
+  final double? baseLat;
+  final double? baseLng;
   final int mode;
   final Color color;
-  final void Function(String) onSubmitted;
+  final void Function(double lat, double lng) onSetBase;
 
   const RadarBody({
     required this.animation,
-    required this.inputController,
-    required this.radius,
-    required this.isDestroyed,
-    required this.mode,
-    required this.color,
-    required this.onSubmitted,
+    required this.devices,
+    required this.onSetBase,
+    this.baseLat,
+    this.baseLng,
+    this.mode = 1,
+    this.color = AppColors.accentTeal,
     super.key,
   });
+
+  double get _nearestDistance {
+    double min = double.infinity;
+    for (final d in devices) {
+      if (d.coordinates.isNotEmpty) {
+        final dist = d.coordinates.last.distance;
+        if (dist < min) min = dist;
+      }
+    }
+    return min == double.infinity ? 0 : min;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,12 +42,28 @@ class RadarBody extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       child: Column(
         children: [
-          Expanded(child: Center(child: _RadarOrOffline(this))),
-          DistanceControlPanel(
-            controller: inputController,
-            onSubmitted: onSubmitted,
-            currentRadius: radius,
-            isDestroyed: isDestroyed,
+          Expanded(
+            child: Center(
+              child: AnimatedBuilder(
+                animation: animation,
+                builder: (context, child) => RadarView(
+                  radius: _nearestDistance.clamp(0, 10000),
+                  pulseValue: animation.value,
+                  mode: mode,
+                  color: color,
+                ),
+              ),
+            ),
+          ),
+          if (devices.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            _DeviceSection(devices: devices),
+          ],
+          const SizedBox(height: 16),
+          BaseCoordsPanel(
+            initialLat: baseLat,
+            initialLng: baseLng,
+            onSave: onSetBase,
           ),
         ],
       ),
@@ -42,30 +71,27 @@ class RadarBody extends StatelessWidget {
   }
 }
 
-class _RadarOrOffline extends StatelessWidget {
-  final RadarBody props;
-  const _RadarOrOffline(this.props);
+class _DeviceSection extends StatelessWidget {
+  final List<DeviceModel> devices;
+  const _DeviceSection({required this.devices});
 
   @override
   Widget build(BuildContext context) {
-    if (props.isDestroyed) {
-      return const Text(
-        'TRACKER OFFLINE',
-        style: TextStyle(
-          color: AppColors.errorRed,
-          fontSize: 28,
-          fontWeight: FontWeight.bold,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'TRACKED DEVICES',
+          style: TextStyle(
+            fontSize: 10,
+            letterSpacing: 2.5,
+            color: AppColors.accentTeal,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-      );
-    }
-    return AnimatedBuilder(
-      animation: props.animation,
-      builder: (_, child) => RadarView(
-        radius: props.radius,
-        pulseValue: props.animation.value,
-        mode: props.mode,
-        color: props.color,
-      ),
+        const SizedBox(height: 8),
+        for (final d in devices) DeviceListTile(device: d),
+      ],
     );
   }
 }

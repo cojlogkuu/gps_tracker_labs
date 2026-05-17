@@ -9,6 +9,7 @@ class RegisterForm extends StatelessWidget {
   final TextEditingController passwordController;
   final TextEditingController confirmController;
   final VoidCallback onRegister;
+  final bool isLoading;
 
   const RegisterForm({
     required this.formKey,
@@ -17,6 +18,7 @@ class RegisterForm extends StatelessWidget {
     required this.passwordController,
     required this.confirmController,
     required this.onRegister,
+    this.isLoading = false,
     super.key,
   });
 
@@ -30,8 +32,13 @@ class RegisterForm extends StatelessWidget {
             controller: nameController,
             label: 'FULL NAME',
             prefixIcon: Icons.person_outline,
-            validator: (v) =>
-                (v == null || v.trim().isEmpty) ? 'Name is required' : null,
+            validator: (v) {
+              if (v == null || v.trim().isEmpty) return 'Name is required';
+              if (v.contains(RegExp(r'[0-9]'))) {
+                return 'Name cannot contain numbers';
+              }
+              return null;
+            },
           ),
           const SizedBox(height: 16),
           GeneralTextField(
@@ -39,8 +46,11 @@ class RegisterForm extends StatelessWidget {
             label: 'EMAIL',
             prefixIcon: Icons.alternate_email,
             keyboardType: TextInputType.emailAddress,
-            validator: (v) =>
-                (v == null || v.trim().isEmpty) ? 'Email is required' : null,
+            validator: (v) {
+              if (v == null || v.trim().isEmpty) return 'Email is required';
+              if (!v.contains('@')) return 'Invalid email address';
+              return null;
+            },
           ),
           const SizedBox(height: 16),
           GeneralTextField(
@@ -62,7 +72,11 @@ class RegisterForm extends StatelessWidget {
                 v != passwordController.text ? 'Passwords do not match' : null,
           ),
           const SizedBox(height: 32),
-          GeneralButton(label: 'CREATE ACCOUNT', onPressed: onRegister),
+          GeneralButton(
+            label: 'CREATE ACCOUNT',
+            onPressed: onRegister,
+            isLoading: isLoading,
+          ),
         ],
       ),
     );
