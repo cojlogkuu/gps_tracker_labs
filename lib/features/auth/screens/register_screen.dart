@@ -54,17 +54,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     setState(() => _loading = true);
-
-    final auth = context.read<AuthProvider>();
-    await auth.register(
-      _nameCtrl.text.trim(),
-      _emailCtrl.text.trim(),
-      _passCtrl.text,
-    );
-
-    if (!mounted) return;
-    setState(() => _loading = false);
-    Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
+    try {
+      await context.read<AuthProvider>().register(
+        fullName: _nameCtrl.text.trim(),
+        email: _emailCtrl.text.trim(),
+        password: _passCtrl.text,
+      );
+      if (!mounted) return;
+      Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Registration failed. Please try again.'),
+            backgroundColor: AppColors.errorRed,
+          ),
+        );
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   @override

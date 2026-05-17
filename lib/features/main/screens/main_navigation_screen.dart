@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gps_tracker/core/data/repositories/api_device_repository.dart';
 import 'package:gps_tracker/core/providers/connectivity_provider.dart';
 import 'package:gps_tracker/core/theme/app_colors.dart';
 import 'package:gps_tracker/features/profile/screens/profile_screen.dart';
@@ -6,7 +7,9 @@ import 'package:gps_tracker/features/radar/screens/radar_screen.dart';
 import 'package:provider/provider.dart';
 
 class MainNavigationScreen extends StatefulWidget {
-  const MainNavigationScreen({super.key});
+  final ApiDeviceRepository apiDeviceRepo;
+
+  const MainNavigationScreen({required this.apiDeviceRepo, super.key});
 
   @override
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
@@ -15,8 +18,6 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _selectedIndex = 0;
 
-  static const List<Widget> _pages = [RadarScreen(), ProfileScreen()];
-
   void _onItemTapped(int index) {
     setState(() => _selectedIndex = index);
   }
@@ -24,6 +25,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     final isOnline = context.watch<ConnectivityProvider>().isOnline;
+    final pages = [
+      const RadarScreen(),
+      ProfileScreen(apiDeviceRepo: widget.apiDeviceRepo),
+    ];
 
     return Scaffold(
       body: Column(
@@ -47,7 +52,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               ),
             ),
           Expanded(
-            child: IndexedStack(index: _selectedIndex, children: _pages),
+            child: IndexedStack(index: _selectedIndex, children: pages),
           ),
         ],
       ),

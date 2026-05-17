@@ -1,23 +1,33 @@
 class UserModel {
-  final String name;
+  final String id;
+  final String fullName;
   final String email;
-  final String password;
+  final double? baseLatitude;
+  final double? baseLongitude;
 
   const UserModel({
-    required this.name,
+    required this.id,
+    required this.fullName,
     required this.email,
-    required this.password,
+    this.baseLatitude,
+    this.baseLongitude,
   });
 
+  bool get hasBaseCoords => baseLatitude != null && baseLongitude != null;
+
   Map<String, dynamic> toJson() => {
-    'name': name,
+    'id': id,
+    'fullName': fullName,
     'email': email,
-    'password': password,
+    'baseLatitude': baseLatitude,
+    'baseLongitude': baseLongitude,
   };
 
   factory UserModel.fromJson(Map<String, dynamic> j) => UserModel(
-    name: j['name'] as String,
+    id: j['id'] as String,
+    fullName: j['fullName'] as String,
     email: j['email'] as String,
-    password: j['password'] as String,
+    baseLatitude: (j['baseLatitude'] as num?)?.toDouble(),
+    baseLongitude: (j['baseLongitude'] as num?)?.toDouble(),
   );
 }

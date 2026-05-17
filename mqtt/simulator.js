@@ -1,7 +1,7 @@
 const mqtt = require("mqtt");
 const crypto = require("crypto");
 
-const deviceId = "57e42626-fe35-48a9-b8a1-4f2ef8f0d1cc";
+const deviceId = "15b23a76-a26f-413d-b3af-87bf0fe6bc5c";
 const baseLat = 5;
 const baseLng = 5;
 
