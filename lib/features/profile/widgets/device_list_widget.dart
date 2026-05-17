@@ -1,17 +1,38 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:gps_tracker/core/data/models/device_model.dart';
+import 'package:gps_tracker/core/data/repositories/api_device_repository.dart';
 import 'package:gps_tracker/core/providers/mqtt_provider.dart';
 import 'package:gps_tracker/core/theme/app_colors.dart';
+import 'package:gps_tracker/features/profile/widgets/device_card.dart';
 import 'package:provider/provider.dart';
 
-class DeviceListWidget extends StatelessWidget {
-  const DeviceListWidget({super.key});
+class DeviceListWidget extends StatefulWidget {
+  final ApiDeviceRepository apiDeviceRepo;
+
+  const DeviceListWidget({required this.apiDeviceRepo, super.key});
+
+  @override
+  State<DeviceListWidget> createState() => _DeviceListWidgetState();
+}
+
+class _DeviceListWidgetState extends State<DeviceListWidget> {
+  late Future<List<DeviceModel>> _devicesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _refresh();
+  }
+
+  void _refresh() {
+    setState(() {
+      _devicesFuture = widget.apiDeviceRepo.fetchDevices();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final mqtt = context.watch<MqttProvider>();
-    final devices = mqtt.devices;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -28,85 +49,40 @@ class DeviceListWidget extends StatelessWidget {
           onPressed: () => _showCreateDialog(context, mqtt),
         ),
         const SizedBox(height: 16),
-        if (devices.isEmpty)
-          const Text(
-            'No devices saved yet.',
-            style: TextStyle(color: Colors.white54, fontSize: 13),
-          )
-        else
-          ...devices.map((d) {
-            return Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: AppColors.cardBg,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: AppColors.accentTeal.withValues(alpha: 0.15),
-                ),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.device_hub,
-                    color: AppColors.accentTeal,
-                    size: 24,
+        FutureBuilder<List<DeviceModel>>(
+          future: _devicesFuture,
+          builder: (context, snap) {
+            if (snap.connectionState == ConnectionState.waiting) {
+              return const Center(
+                child: CircularProgressIndicator(color: AppColors.accentTeal),
+              );
+            }
+            // Offline or error: fall back to local MQTT cache.
+            final devices = snap.hasError ? mqtt.devices : (snap.data ?? []);
+            if (snap.hasError) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Offline — showing cached devices'),
+                    backgroundColor: AppColors.errorRed,
+                    duration: Duration(seconds: 2),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          d.name,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        SelectableText(
-                          d.id,
-                          style: const TextStyle(
-                            color: Colors.white54,
-                            fontSize: 10,
-                            fontFamily: 'monospace',
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.copy,
-                      color: AppColors.accentTeal,
-                      size: 18,
-                    ),
-                    onPressed: () {
-                      Clipboard.setData(ClipboardData(text: d.id));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Device ID copied to clipboard'),
-                          duration: Duration(seconds: 1),
-                        ),
-                      );
-                    },
-                  ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.delete_outline,
-                      color: AppColors.errorRed,
-                      size: 20,
-                    ),
-                    onPressed: () => mqtt.deleteDevice(d.id),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                ],
-              ),
+                );
+              });
+            }
+            if (devices.isEmpty) {
+              return const Text(
+                'No devices yet. Create one above.',
+                style: TextStyle(color: Colors.white54, fontSize: 13),
+              );
+            }
+            return Column(
+              children: devices
+                  .map((d) => DeviceCard(key: ValueKey(d.id), device: d))
+                  .toList(),
             );
-          }),
+          },
+        ),
       ],
     );
   }
@@ -138,9 +114,10 @@ class DeviceListWidget extends StatelessWidget {
             child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
           ),
           TextButton(
-            onPressed: () {
-              mqtt.createDevice(ctrl.text.trim());
+            onPressed: () async {
               Navigator.of(ctx).pop();
+              await mqtt.createDevice(ctrl.text.trim());
+              if (mounted) _refresh();
             },
             child: const Text(
               'Create',

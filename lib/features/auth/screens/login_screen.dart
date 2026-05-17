@@ -50,16 +50,15 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     setState(() => _loading = true);
-
-    final auth = context.read<AuthProvider>();
-    final ok = await auth.login(_emailCtrl.text.trim(), _passCtrl.text);
-
-    if (!mounted) return;
-    setState(() => _loading = false);
-
-    if (ok) {
+    try {
+      await context.read<AuthProvider>().login(
+        _emailCtrl.text.trim(),
+        _passCtrl.text,
+      );
+      if (!mounted) return;
       await Navigator.of(context).pushReplacementNamed('/home');
-    } else {
+    } catch (_) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context)
         ..clearSnackBars()
         ..showSnackBar(
@@ -74,6 +73,8 @@ class _LoginScreenState extends State<LoginScreen> {
             backgroundColor: AppColors.errorRed,
           ),
         );
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 

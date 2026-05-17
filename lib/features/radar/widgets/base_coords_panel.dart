@@ -4,7 +4,7 @@ import 'package:gps_tracker/core/theme/app_colors.dart';
 class BaseCoordsPanel extends StatefulWidget {
   final double? initialLat;
   final double? initialLng;
-  final void Function(double lat, double lng) onSave;
+  final Future<void> Function(double lat, double lng) onSave;
 
   const BaseCoordsPanel({
     required this.onSave,
@@ -39,28 +39,53 @@ class _BaseCoordsPanelState extends State<BaseCoordsPanel> {
     super.dispose();
   }
 
-  void _save() {
+  bool _loading = false;
+
+  Future<void> _save() async {
     final lat = double.tryParse(_latCtrl.text.trim());
     final lng = double.tryParse(_lngCtrl.text.trim());
     if (lat == null || lng == null) return;
-    widget.onSave(lat, lng);
 
-    if (!mounted) return;
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Base coordinates saved successfully.',
-            style: TextStyle(
-              color: AppColors.primaryBg,
-              fontWeight: FontWeight.w600,
+    setState(() => _loading = true);
+
+    try {
+      await widget.onSave(lat, lng);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Base coordinates saved successfully.',
+              style: TextStyle(
+                color: AppColors.primaryBg,
+                fontWeight: FontWeight.w600,
+              ),
             ),
+            backgroundColor: AppColors.accentTeal,
+            duration: Duration(seconds: 2),
           ),
-          backgroundColor: AppColors.accentTeal,
-          duration: Duration(seconds: 2),
-        ),
-      );
+        );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Failed to save base coordinates.',
+              style: TextStyle(
+                color: AppColors.primaryBg,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            backgroundColor: AppColors.errorRed,
+            duration: Duration(seconds: 2),
+          ),
+        );
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   Widget _field(TextEditingController c, String label) => TextField(
@@ -120,14 +145,23 @@ class _BaseCoordsPanelState extends State<BaseCoordsPanel> {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              onPressed: _save,
-              child: const Text(
-                'SET BASE',
-                style: TextStyle(
-                  letterSpacing: 1.5,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+              onPressed: _loading ? null : _save,
+              child: _loading
+                  ? const SizedBox(
+                      height: 16,
+                      width: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.primaryBg,
+                      ),
+                    )
+                  : const Text(
+                      'SET BASE',
+                      style: TextStyle(
+                        letterSpacing: 1.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
             ),
           ),
         ],

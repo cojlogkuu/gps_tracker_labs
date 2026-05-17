@@ -12,7 +12,7 @@ class RadarBody extends StatelessWidget {
   final double? baseLng;
   final int mode;
   final Color color;
-  final void Function(double lat, double lng) onSetBase;
+  final Future<void> Function(double lat, double lng) onSetBase;
 
   const RadarBody({
     required this.animation,

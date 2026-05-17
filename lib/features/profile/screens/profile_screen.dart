@@ -1,62 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:gps_tracker/core/data/repositories/auth_repository.dart';
+import 'package:gps_tracker/core/data/repositories/api_device_repository.dart';
 import 'package:gps_tracker/core/providers/auth_provider.dart';
 import 'package:gps_tracker/core/theme/app_colors.dart';
+import 'package:gps_tracker/features/profile/widgets/base_coords_dialog.dart';
 import 'package:gps_tracker/features/profile/widgets/delete_account_dialog.dart';
 import 'package:gps_tracker/features/profile/widgets/device_list_widget.dart';
-import 'package:gps_tracker/features/profile/widgets/edit_name_dialog.dart';
 import 'package:gps_tracker/features/profile/widgets/profile_header.dart';
 import 'package:gps_tracker/features/profile/widgets/profile_info_card.dart';
 import 'package:gps_tracker/features/profile/widgets/profile_logout_button.dart';
 import 'package:provider/provider.dart';
 
-class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+class ProfileScreen extends StatelessWidget {
+  final ApiDeviceRepository apiDeviceRepo;
 
-  @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
-}
+  const ProfileScreen({required this.apiDeviceRepo, super.key});
 
-class _ProfileScreenState extends State<ProfileScreen> {
-  final IAuthRepository _auth = SharedPrefsAuthRepository();
-  String _name = '';
-  String _email = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _loadProfile();
-  }
-
-  Future<void> _loadProfile() async {
-    final name = await _auth.getName();
-    final email = await _auth.getEmail();
-    if (!mounted) return;
-    setState(() {
-      _name = name ?? '';
-      _email = email ?? '';
-    });
-  }
-
-  Future<void> _editName() async {
-    final newName = await showEditNameDialog(context, _name);
-    if (newName == null || newName.isEmpty) return;
-    await _auth.updateName(newName);
-    _loadProfile();
-  }
-
-  Future<void> _deleteAccount() async {
-    final confirmed = await showDeleteAccountDialog(context);
-    if (!confirmed) return;
-    await _auth.deleteAccount();
-    if (!mounted) return;
-    final authProvider = context.read<AuthProvider>();
-    await authProvider.logout();
-    if (!mounted) return;
-    Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
-  }
-
-  static Widget _sectionLabel(String text) => Text(
+  static Widget _label(String text) => Text(
     text,
     style: const TextStyle(
       fontSize: 10,
@@ -66,14 +25,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ),
   );
 
+  Future<void> _deleteAccount(BuildContext context) async {
+    final confirmed = await showDeleteAccountDialog(context);
+    if (!confirmed || !context.mounted) return;
+    await context.read<AuthProvider>().logout();
+    if (!context.mounted) return;
+    Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
+  }
+
+  Future<void> _setBaseCoords(BuildContext context) async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => const BaseCoordsDialog(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    final user = auth.currentUser;
     final hPad = MediaQuery.of(context).size.width > 600 ? 80.0 : 24.0;
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        centerTitle: false,
         automaticallyImplyLeading: false,
         title: const Text(
           'PROFILE',
@@ -86,13 +62,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit, color: AppColors.accentTeal),
-            onPressed: _editName,
-            tooltip: 'Edit Name',
+            icon: const Icon(Icons.my_location, color: AppColors.accentTeal),
+            onPressed: () => _setBaseCoords(context),
+            tooltip: 'Set Base Coordinates',
           ),
           IconButton(
             icon: const Icon(Icons.delete_forever, color: AppColors.errorRed),
-            onPressed: _deleteAccount,
+            onPressed: () => _deleteAccount(context),
             tooltip: 'Delete Account',
           ),
         ],
@@ -104,28 +80,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ProfileHeader(name: _name),
+              ProfileHeader(name: user?.fullName ?? ''),
               const SizedBox(height: 32),
-              _sectionLabel('ACCOUNT DETAILS'),
+              _label('ACCOUNT DETAILS'),
               const SizedBox(height: 12),
               ProfileInfoCard(
                 items: [
                   ProfileInfoRow(
                     icon: Icons.person_outline,
                     label: 'Full Name',
-                    value: _name,
+                    value: user?.fullName ?? '',
                   ),
                   ProfileInfoRow(
                     icon: Icons.alternate_email,
                     label: 'Email',
-                    value: _email,
+                    value: user?.email ?? '',
+                  ),
+                  ProfileInfoRow(
+                    icon: Icons.my_location,
+                    label: 'Base Coords',
+                    value: user?.hasBaseCoords == true
+                        ? '${user!.baseLatitude!.toStringAsFixed(4)}, '
+                              '${user.baseLongitude!.toStringAsFixed(4)}'
+                        : 'Not set — MQTT blocked',
                   ),
                 ],
               ),
               const SizedBox(height: 32),
-              _sectionLabel('SAVED DEVICES'),
+              _label('SAVED DEVICES'),
               const SizedBox(height: 12),
-              const DeviceListWidget(),
+              DeviceListWidget(apiDeviceRepo: apiDeviceRepo),
               const SizedBox(height: 40),
               ProfileLogoutButton(
                 onLogout: () async {
