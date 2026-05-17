@@ -5,6 +5,7 @@ import 'package:gps_tracker/core/theme/app_colors.dart';
 import 'package:gps_tracker/features/profile/widgets/delete_account_dialog.dart';
 import 'package:gps_tracker/features/profile/widgets/device_list_widget.dart';
 import 'package:gps_tracker/features/profile/widgets/edit_name_dialog.dart';
+import 'package:gps_tracker/features/profile/widgets/network_settings_widget.dart';
 import 'package:gps_tracker/features/profile/widgets/profile_header.dart';
 import 'package:gps_tracker/features/profile/widgets/profile_info_card.dart';
 import 'package:gps_tracker/features/profile/widgets/profile_logout_button.dart';
@@ -122,6 +123,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ],
               ),
+              const SizedBox(height: 32),
+              _sectionLabel('NETWORK SETTINGS'),
+              const SizedBox(height: 12),
+              const NetworkSettingsWidget(),
               const SizedBox(height: 32),
               _sectionLabel('SAVED DEVICES'),
               const SizedBox(height: 12),

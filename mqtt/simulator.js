@@ -1,16 +1,20 @@
 const mqtt = require("mqtt");
-const crypto = require("crypto");
 
-const deviceId = "57e42626-fe35-48a9-b8a1-4f2ef8f0d1cc";
+// Читаємо аргументи командного рядка
+const env = process.argv[2] || "local";
+const deviceId = process.argv[3] || "57e42626-fe35-48a9-b8a1-4f2ef8f0d1cc";
+
 const baseLat = 5;
 const baseLng = 5;
 
-const client = mqtt.connect("mqtt://localhost:1883");
+const brokerUrl =
+  env === "hivemq" ? "mqtt://broker.hivemq.com:1883" : "mqtt://localhost:1883";
+
+const client = mqtt.connect(brokerUrl);
 
 client.on("connect", () => {
-  console.log(
-    `Connected to local MQTT broker as simulator device: ${deviceId}`,
-  );
+  console.log(`Connected to ${env} MQTT broker.`);
+  console.log(`Simulating device: ${deviceId}`);
 
   setInterval(() => {
     const dLat = Math.random() * 0.09 - 0.045;
@@ -23,7 +27,10 @@ client.on("connect", () => {
       timestamp: new Date().toISOString(),
     };
 
-    client.publish("tracker/devices/location", JSON.stringify(payload));
+    client.publish("tracker/cojlogkuu_lab/location", JSON.stringify(payload));
+    console.log(
+      `[${new Date().toLocaleTimeString()}] Published data for: ${deviceId}`,
+    );
   }, 5000);
 });
 
