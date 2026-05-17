@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:gps_tracker/core/data/models/device_model.dart';
-import 'package:gps_tracker/core/providers/auth_provider.dart';
 import 'package:gps_tracker/core/providers/mqtt_provider.dart';
 import 'package:gps_tracker/core/theme/app_colors.dart';
+import 'package:gps_tracker/features/auth/cubit/auth_cubit.dart';
 import 'package:gps_tracker/features/radar/widgets/add_device_ping_dialog.dart';
 import 'package:gps_tracker/features/radar/widgets/radar_body.dart';
 import 'package:provider/provider.dart';
@@ -115,7 +115,7 @@ class _RadarScreenState extends State<RadarScreen>
         mode: _radarMode(mqtt.devices),
         color: _radarColor(mqtt.devices),
         onSetBase: (lat, lng) async {
-          await context.read<AuthProvider>().updateBaseCoords(lat, lng);
+          await context.read<AuthCubit>().updateBaseCoords(lat, lng);
           if (!context.mounted) return;
           await mqtt.setBase(lat, lng);
         },

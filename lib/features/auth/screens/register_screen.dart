@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:gps_tracker/core/providers/auth_provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gps_tracker/core/providers/connectivity_provider.dart';
 import 'package:gps_tracker/core/theme/app_colors.dart';
+import 'package:gps_tracker/features/auth/cubit/auth_cubit.dart';
+import 'package:gps_tracker/features/auth/cubit/auth_state.dart';
 import 'package:gps_tracker/features/auth/widgets/auth_footer_link.dart';
 import 'package:gps_tracker/features/auth/widgets/register_form.dart';
 import 'package:gps_tracker/features/auth/widgets/register_header.dart';
-import 'package:provider/provider.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -20,7 +21,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   final _confirmCtrl = TextEditingController();
-  bool _loading = false;
 
   @override
   void dispose() {
@@ -31,7 +31,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  Future<void> _onRegister() async {
+  void _onRegister() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     final isOnline = context.read<ConnectivityProvider>().isOnline;
@@ -53,28 +53,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    setState(() => _loading = true);
-    try {
-      await context.read<AuthProvider>().register(
-        fullName: _nameCtrl.text.trim(),
-        email: _emailCtrl.text.trim(),
-        password: _passCtrl.text,
-      );
-      if (!mounted) return;
-      Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context)
-        ..clearSnackBars()
-        ..showSnackBar(
-          const SnackBar(
-            content: Text('Registration failed. Please try again.'),
-            backgroundColor: AppColors.errorRed,
-          ),
-        );
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
+    context.read<AuthCubit>().register(
+      fullName: _nameCtrl.text.trim(),
+      email: _emailCtrl.text.trim(),
+      password: _passCtrl.text,
+    );
   }
 
   @override
@@ -95,34 +78,54 @@ class _RegisterScreenState extends State<RegisterScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(hPad, 8, hPad, 32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const RegisterHeader(),
-              const SizedBox(height: 40),
-              RegisterForm(
-                formKey: _formKey,
-                nameController: _nameCtrl,
-                emailController: _emailCtrl,
-                passwordController: _passCtrl,
-                confirmController: _confirmCtrl,
-                onRegister: _onRegister,
-                isLoading: _loading,
+      body: BlocConsumer<AuthCubit, AuthState>(
+        listener: (context, state) {
+          if (state is AuthAuthenticated) {
+            Navigator.of(
+              context,
+            ).pushNamedAndRemoveUntil('/home', (_) => false);
+          } else if (state is AuthError) {
+            ScaffoldMessenger.of(context)
+              ..clearSnackBars()
+              ..showSnackBar(
+                const SnackBar(
+                  content: Text('Registration failed. Please try again.'),
+                  backgroundColor: AppColors.errorRed,
+                ),
+              );
+          }
+        },
+        builder: (context, state) {
+          return SafeArea(
+            top: false,
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(hPad, 8, hPad, 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const RegisterHeader(),
+                  const SizedBox(height: 40),
+                  RegisterForm(
+                    formKey: _formKey,
+                    nameController: _nameCtrl,
+                    emailController: _emailCtrl,
+                    passwordController: _passCtrl,
+                    confirmController: _confirmCtrl,
+                    onRegister: _onRegister,
+                    isLoading: state is AuthLoading,
+                  ),
+                  const SizedBox(height: 32),
+                  AuthFooterLink(
+                    question: 'Already have an account? ',
+                    actionLabel: 'Sign In',
+                    onTap: () => Navigator.of(context).pop(),
+                  ),
+                  const SizedBox(height: 16),
+                ],
               ),
-              const SizedBox(height: 32),
-              AuthFooterLink(
-                question: 'Already have an account? ',
-                actionLabel: 'Sign In',
-                onTap: () => Navigator.of(context).pop(),
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }

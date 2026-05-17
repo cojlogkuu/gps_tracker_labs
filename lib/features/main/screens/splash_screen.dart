@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:gps_tracker/core/providers/auth_provider.dart';
 import 'package:gps_tracker/core/providers/connectivity_provider.dart';
 import 'package:gps_tracker/core/theme/app_colors.dart';
+import 'package:gps_tracker/features/auth/cubit/auth_cubit.dart';
+import 'package:gps_tracker/features/auth/cubit/auth_state.dart';
 import 'package:provider/provider.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -22,11 +23,11 @@ class _SplashScreenState extends State<SplashScreen> {
     await Future<void>.delayed(const Duration(seconds: 1));
     if (!mounted) return;
 
-    final auth = context.read<AuthProvider>();
+    final auth = context.read<AuthCubit>();
     await auth.tryAutoLogin();
 
     if (!mounted) return;
-    if (auth.isAuthenticated) {
+    if (auth.state is AuthAuthenticated) {
       final isOnline = context.read<ConnectivityProvider>().isOnline;
       if (!isOnline) {
         ScaffoldMessenger.of(context)

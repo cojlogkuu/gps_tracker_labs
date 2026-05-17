@@ -1,38 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gps_tracker/core/data/models/device_model.dart';
-import 'package:gps_tracker/core/data/repositories/api_device_repository.dart';
-import 'package:gps_tracker/core/providers/mqtt_provider.dart';
 import 'package:gps_tracker/core/theme/app_colors.dart';
+import 'package:gps_tracker/features/device/cubit/device_cubit.dart';
+import 'package:gps_tracker/features/device/cubit/device_state.dart';
 import 'package:gps_tracker/features/profile/widgets/device_card.dart';
-import 'package:provider/provider.dart';
 
-class DeviceListWidget extends StatefulWidget {
-  final ApiDeviceRepository apiDeviceRepo;
-
-  const DeviceListWidget({required this.apiDeviceRepo, super.key});
-
-  @override
-  State<DeviceListWidget> createState() => _DeviceListWidgetState();
-}
-
-class _DeviceListWidgetState extends State<DeviceListWidget> {
-  late Future<List<DeviceModel>> _devicesFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _refresh();
-  }
-
-  void _refresh() {
-    setState(() {
-      _devicesFuture = widget.apiDeviceRepo.fetchDevices();
-    });
-  }
+class DeviceListWidget extends StatelessWidget {
+  const DeviceListWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final mqtt = context.watch<MqttProvider>();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -46,36 +24,54 @@ class _DeviceListWidgetState extends State<DeviceListWidget> {
           ),
           icon: const Icon(Icons.add),
           label: const Text('CREATE NEW DEVICE'),
-          onPressed: () => _showCreateDialog(context, mqtt),
+          onPressed: () => showDialog<void>(
+            context: context,
+            builder: (_) => const CreateDeviceDialog(),
+          ),
         ),
         const SizedBox(height: 16),
-        FutureBuilder<List<DeviceModel>>(
-          future: _devicesFuture,
-          builder: (context, snap) {
-            if (snap.connectionState == ConnectionState.waiting) {
+        BlocConsumer<DeviceCubit, DeviceState>(
+          listener: (context, state) {
+            if (state is DeviceError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Offline — showing cached devices'),
+                  backgroundColor: AppColors.errorRed,
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            }
+          },
+          builder: (context, state) {
+            if (state is DeviceInitial) {
+              // Trigger fetch lazily if in initial state
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                context.read<DeviceCubit>().fetchDevices();
+              });
               return const Center(
                 child: CircularProgressIndicator(color: AppColors.accentTeal),
               );
             }
-            // Offline or error: fall back to local MQTT cache.
-            final devices = snap.hasError ? mqtt.devices : (snap.data ?? []);
-            if (snap.hasError) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Offline — showing cached devices'),
-                    backgroundColor: AppColors.errorRed,
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              });
+
+            if (state is DeviceLoading) {
+              return const Center(
+                child: CircularProgressIndicator(color: AppColors.accentTeal),
+              );
             }
+
+            final devices = state is DeviceLoaded
+                ? state.devices
+                : (state is DeviceError
+                      ? state.cachedDevices
+                      : <DeviceModel>[]);
+
             if (devices.isEmpty) {
               return const Text(
                 'No devices yet. Create one above.',
                 style: TextStyle(color: Colors.white54, fontSize: 13),
               );
             }
+
             return Column(
               children: devices
                   .map((d) => DeviceCard(key: ValueKey(d.id), device: d))
@@ -86,46 +82,59 @@ class _DeviceListWidgetState extends State<DeviceListWidget> {
       ],
     );
   }
+}
 
-  void _showCreateDialog(BuildContext context, MqttProvider mqtt) {
-    final ctrl = TextEditingController();
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.cardBg,
-        title: const Text(
-          'Create Device',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: TextField(
-          controller: ctrl,
-          style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
-            labelText: 'Device Name',
-            labelStyle: TextStyle(color: AppColors.accentTeal),
-            enabledBorder: UnderlineInputBorder(
-              borderSide: BorderSide(color: AppColors.accentTeal),
-            ),
+class CreateDeviceDialog extends StatefulWidget {
+  const CreateDeviceDialog({super.key});
+
+  @override
+  State<CreateDeviceDialog> createState() => _CreateDeviceDialogState();
+}
+
+class _CreateDeviceDialogState extends State<CreateDeviceDialog> {
+  final _ctrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: AppColors.cardBg,
+      title: const Text('Create Device', style: TextStyle(color: Colors.white)),
+      content: TextField(
+        controller: _ctrl,
+        style: const TextStyle(color: Colors.white),
+        decoration: const InputDecoration(
+          labelText: 'Device Name',
+          labelStyle: TextStyle(color: AppColors.accentTeal),
+          enabledBorder: UnderlineInputBorder(
+            borderSide: BorderSide(color: AppColors.accentTeal),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.of(ctx).pop();
-              await mqtt.createDevice(ctrl.text.trim());
-              if (mounted) _refresh();
-            },
-            child: const Text(
-              'Create',
-              style: TextStyle(color: AppColors.accentTeal),
-            ),
-          ),
-        ],
       ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+        ),
+        TextButton(
+          onPressed: () {
+            final name = _ctrl.text.trim();
+            if (name.isNotEmpty) {
+              context.read<DeviceCubit>().createDevice(name);
+            }
+            Navigator.of(context).pop();
+          },
+          child: const Text(
+            'Create',
+            style: TextStyle(color: AppColors.accentTeal),
+          ),
+        ),
+      ],
     );
   }
 }
