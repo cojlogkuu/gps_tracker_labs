@@ -1,4 +1,6 @@
+import 'package:flashlight_plugin/flashlight_plugin.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gps_tracker/core/theme/app_colors.dart';
 import 'package:gps_tracker/features/auth/cubit/auth_cubit.dart';
@@ -38,6 +40,34 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
+  Future<void> _toggleFlashlight(BuildContext context) async {
+    try {
+      await FlashlightPlugin.toggleLight();
+    } on PlatformException {
+      if (!context.mounted) return;
+      _showUnsupportedDialog(context);
+    } on MissingPluginException {
+      if (!context.mounted) return;
+      _showUnsupportedDialog(context);
+    }
+  }
+
+  void _showUnsupportedDialog(BuildContext context) => showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Not Supported'),
+      content: const Text(
+        'Flashlight control is not supported on this platform.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(),
+          child: const Text('OK'),
+        ),
+      ],
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     final hPad = MediaQuery.of(context).size.width > 600 ? 80.0 : 24.0;
@@ -57,6 +87,11 @@ class ProfileScreen extends StatelessWidget {
           ),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.highlight, color: AppColors.accentTeal),
+            onPressed: () => _toggleFlashlight(context),
+            tooltip: 'Toggle Flashlight',
+          ),
           IconButton(
             icon: const Icon(Icons.my_location, color: AppColors.accentTeal),
             onPressed: () => _setBaseCoords(context),
